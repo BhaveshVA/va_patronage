@@ -5,8 +5,8 @@ from va_patronage.file_processor import FileProcessor
 class TestFileProcessor(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Patch SparkSession and DeltaTable at the correct import location
-        cls.spark_patcher = patch('va_patronage.file_processor.SparkSession', autospec=True)
+        # Patch SparkSession and DeltaTable at their actual locations
+        cls.spark_patcher = patch('pyspark.sql.SparkSession', autospec=True)
         cls.mock_spark_class = cls.spark_patcher.start()
         cls.mock_spark = MagicMock()
         cls.mock_spark_class.builder.getOrCreate.return_value = cls.mock_spark
@@ -15,8 +15,8 @@ class TestFileProcessor(unittest.TestCase):
         cls.mock_spark.read.csv.return_value = MagicMock()
         cls.mock_spark.createDataFrame.return_value = MagicMock()
         cls.mock_spark.sql.return_value.collect.return_value = [[None]]
-        # Patch DeltaTable
-        cls.delta_patcher = patch('va_patronage.file_processor.DeltaTable', autospec=True)
+        # Patch DeltaTable at its actual location
+        cls.delta_patcher = patch('delta.tables.DeltaTable', autospec=True)
         cls.mock_delta = cls.delta_patcher.start()
         cls.mock_delta.forPath.return_value = MagicMock()
         cls.config = {
