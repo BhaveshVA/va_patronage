@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import MagicMock
 from va_patronage.file_processor import FileProcessor
 
 class TestFileProcessor(unittest.TestCase):
@@ -18,8 +19,9 @@ class TestFileProcessor(unittest.TestCase):
             'others_start_datetime': '2025-01-01 00:00:00',
             'identity_correlations_path': 'dummy_delta'
         }
-        # Pass None for spark
-        self.processor = FileProcessor(None, self.config)
+        # Use MagicMock for spark
+        self.mock_spark = MagicMock()
+        self.processor = FileProcessor(self.mock_spark, self.config)
 
     def test_source_directories(self):
         dirs = self.processor.source_directories()
