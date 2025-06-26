@@ -5,20 +5,54 @@ from va_patronage.file_processor import FileProcessor
 class TestFileProcessor(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Patch SparkSession and DeltaTable at their actual locations
+        # Patch SparkSession at its real location
         cls.spark_patcher = patch('pyspark.sql.SparkSession', autospec=True)
         cls.mock_spark_class = cls.spark_patcher.start()
         cls.mock_spark = MagicMock()
         cls.mock_spark_class.builder.getOrCreate.return_value = cls.mock_spark
-        # Patch all spark.read and spark.sql calls
-        cls.mock_spark.read.format.return_value.load.return_value.withColumnRenamed.return_value.persist.return_value = MagicMock()
-        cls.mock_spark.read.csv.return_value = MagicMock()
-        cls.mock_spark.createDataFrame.return_value = MagicMock()
-        cls.mock_spark.sql.return_value.collect.return_value = [[None]]
-        # Patch DeltaTable at its actual location
+
+        # Create a mock DataFrame with all chained methods returning itself
+        mock_df = MagicMock()
+        mock_df.withColumn.return_value = mock_df
+        mock_df.withColumnRenamed.return_value = mock_df
+        mock_df.persist.return_value = mock_df
+        mock_df.select.return_value = mock_df
+        mock_df.selectExpr.return_value = mock_df
+        mock_df.filter.return_value = mock_df
+        mock_df.join.return_value = mock_df
+        mock_df.orderBy.return_value = mock_df
+        mock_df.limit.return_value = mock_df
+        mock_df.unionAll.return_value = mock_df
+        mock_df.dropDuplicates.return_value = mock_df
+        mock_df.display.return_value = None
+        mock_df.collect.return_value = [[None]]
+        mock_df.count.return_value = 0
+        mock_df.first.return_value = [None]
+        mock_df.drop.return_value = mock_df
+        mock_df.withColumnRenamed.return_value = mock_df
+        mock_df.withColumn.return_value = mock_df
+        mock_df.rank.return_value = mock_df
+        mock_df.alias.return_value = mock_df
+        mock_df.toDF.return_value = mock_df
+        mock_df.execute.return_value = None
+
+        cls.mock_spark.read.format.return_value.load.return_value.withColumnRenamed.return_value.persist.return_value = mock_df
+        cls.mock_spark.read.csv.return_value = mock_df
+        cls.mock_spark.createDataFrame.return_value = mock_df
+        cls.mock_spark.sql.return_value = mock_df
+
+        # Patch DeltaTable at its real location
         cls.delta_patcher = patch('delta.tables.DeltaTable', autospec=True)
         cls.mock_delta = cls.delta_patcher.start()
-        cls.mock_delta.forPath.return_value = MagicMock()
+        mock_delta_table = MagicMock()
+        mock_delta_table.toDF.return_value = mock_df
+        mock_delta_table.alias.return_value = mock_delta_table
+        mock_delta_table.merge.return_value = mock_delta_table
+        mock_delta_table.whenMatchedUpdate.return_value = mock_delta_table
+        mock_delta_table.whenNotMatchedInsert.return_value = mock_delta_table
+        mock_delta_table.execute.return_value = None
+        cls.mock_delta.forPath.return_value = mock_delta_table
+
         cls.config = {
             'initial_cg_file': 'dummy.csv',
             'cg_source': 'dummy_cg',
