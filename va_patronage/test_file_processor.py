@@ -5,18 +5,20 @@ from va_patronage.file_processor import FileProcessor
 class TestFileProcessor(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Patch SparkSession and all Spark/Delta methods used in FileProcessor
-        cls.spark_patch = patch('pyspark.sql.SparkSession', autospec=True)
-        cls.mock_spark_class = cls.spark_patch.start()
+        # Patch SparkSession and DeltaTable at the correct import location
+        cls.spark_patcher = patch('va_patronage.file_processor.SparkSession', autospec=True)
+        cls.mock_spark_class = cls.spark_patcher.start()
         cls.mock_spark = MagicMock()
         cls.mock_spark_class.builder.getOrCreate.return_value = cls.mock_spark
         # Patch all spark.read and spark.sql calls
         cls.mock_spark.read.format.return_value.load.return_value.withColumnRenamed.return_value.persist.return_value = MagicMock()
         cls.mock_spark.read.csv.return_value = MagicMock()
         cls.mock_spark.createDataFrame.return_value = MagicMock()
-        cls.mock_spark.sql.return_value.collect.return_value = [ [None] ]
+        cls.mock_spark.sql.return_value.collect.return_value = [[None]]
         # Patch DeltaTable
-        patch('delta.tables.DeltaTable.forPath', return_value=MagicMock()).start()
+        cls.delta_patcher = patch('va_patronage.file_processor.DeltaTable', autospec=True)
+        cls.mock_delta = cls.delta_patcher.start()
+        cls.mock_delta.forPath.return_value = MagicMock()
         cls.config = {
             'initial_cg_file': 'dummy.csv',
             'cg_source': 'dummy_cg',
@@ -35,7 +37,8 @@ class TestFileProcessor(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        cls.spark_patch.stop()
+        cls.spark_patcher.stop()
+        cls.delta_patcher.stop()
 
     def test_source_directories(self):
         dirs = self.processor.source_directories()
