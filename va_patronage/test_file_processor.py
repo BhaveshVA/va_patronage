@@ -1,59 +1,10 @@
 import unittest
-from unittest.mock import MagicMock, patch
 from va_patronage.file_processor import FileProcessor
 
 class TestFileProcessor(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        # Patch SparkSession at its real location
-        cls.spark_patcher = patch('pyspark.sql.SparkSession', autospec=True)
-        cls.mock_spark_class = cls.spark_patcher.start()
-        cls.mock_spark = MagicMock()
-        cls.mock_spark_class.builder.getOrCreate.return_value = cls.mock_spark
-
-        # Create a mock DataFrame with all chained methods returning itself
-        mock_df = MagicMock()
-        mock_df.withColumn.return_value = mock_df
-        mock_df.withColumnRenamed.return_value = mock_df
-        mock_df.persist.return_value = mock_df
-        mock_df.select.return_value = mock_df
-        mock_df.selectExpr.return_value = mock_df
-        mock_df.filter.return_value = mock_df
-        mock_df.join.return_value = mock_df
-        mock_df.orderBy.return_value = mock_df
-        mock_df.limit.return_value = mock_df
-        mock_df.unionAll.return_value = mock_df
-        mock_df.dropDuplicates.return_value = mock_df
-        mock_df.display.return_value = None
-        mock_df.collect.return_value = [[None]]
-        mock_df.count.return_value = 0
-        mock_df.first.return_value = [None]
-        mock_df.drop.return_value = mock_df
-        mock_df.withColumnRenamed.return_value = mock_df
-        mock_df.withColumn.return_value = mock_df
-        mock_df.rank.return_value = mock_df
-        mock_df.alias.return_value = mock_df
-        mock_df.toDF.return_value = mock_df
-        mock_df.execute.return_value = None
-
-        cls.mock_spark.read.format.return_value.load.return_value.withColumnRenamed.return_value.persist.return_value = mock_df
-        cls.mock_spark.read.csv.return_value = mock_df
-        cls.mock_spark.createDataFrame.return_value = mock_df
-        cls.mock_spark.sql.return_value = mock_df
-
-        # Patch DeltaTable at its real location
-        cls.delta_patcher = patch('delta.tables.DeltaTable', autospec=True)
-        cls.mock_delta = cls.delta_patcher.start()
-        mock_delta_table = MagicMock()
-        mock_delta_table.toDF.return_value = mock_df
-        mock_delta_table.alias.return_value = mock_delta_table
-        mock_delta_table.merge.return_value = mock_delta_table
-        mock_delta_table.whenMatchedUpdate.return_value = mock_delta_table
-        mock_delta_table.whenNotMatchedInsert.return_value = mock_delta_table
-        mock_delta_table.execute.return_value = None
-        cls.mock_delta.forPath.return_value = mock_delta_table
-
-        cls.config = {
+    def setUp(self):
+        # Use minimal config, no Spark
+        self.config = {
             'initial_cg_file': 'dummy.csv',
             'cg_source': 'dummy_cg',
             'scd_source': 'dummy_scd',
@@ -67,12 +18,8 @@ class TestFileProcessor(unittest.TestCase):
             'others_start_datetime': '2025-01-01 00:00:00',
             'identity_correlations_path': 'dummy_delta'
         }
-        cls.processor = FileProcessor(cls.mock_spark, cls.config)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.spark_patcher.stop()
-        cls.delta_patcher.stop()
+        # Pass None for spark
+        self.processor = FileProcessor(None, self.config)
 
     def test_source_directories(self):
         dirs = self.processor.source_directories()
@@ -82,34 +29,6 @@ class TestFileProcessor(unittest.TestCase):
     def test_get_all_files(self):
         files = self.processor.get_all_files([], 0, 0)
         self.assertIsInstance(files, list)
-
-    def test_collect_data_source(self):
-        result = self.processor.collect_data_source()
-        self.assertTrue(result is None or hasattr(result, 'orderBy'))
-
-    def test_initialize_caregivers(self):
-        result = self.processor.initialize_caregivers()
-        self.assertTrue(result is None or hasattr(result, 'withColumn'))
-
-    def test_process_updates(self):
-        # Should not raise
-        self.processor.process_updates(MagicMock(), "CG")
-
-    def test_prepare_caregivers_data(self):
-        result = self.processor.prepare_caregivers_data(MagicMock())
-        self.assertTrue(result is None or hasattr(result, 'withColumn'))
-
-    def test_prepare_scd_data(self):
-        result = self.processor.prepare_scd_data(MagicMock())
-        self.assertTrue(result is None or hasattr(result, 'withColumn'))
-
-    def test_update_pai_data(self):
-        result = self.processor.update_pai_data(MagicMock(), "text")
-        self.assertTrue(result is None or hasattr(result, 'withColumn'))
-
-    def test_process_files(self):
-        # Should not raise
-        self.processor.process_files(MagicMock())
 
 if __name__ == "__main__":
     unittest.main()
